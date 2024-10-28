@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.014676b8.css",
+    "main.js": "/static/js/main.b1ba71e5.js",
+    "static/media/devroots logo.png": "/static/media/devroots logo.c6db13bae398f3435b9a.png",
+    "index.html": "/index.html",
+    "main.014676b8.css.map": "/static/css/main.014676b8.css.map",
+    "main.b1ba71e5.js.map": "/static/js/main.b1ba71e5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.014676b8.css",
+    "static/js/main.b1ba71e5.js"
+  ]
+}

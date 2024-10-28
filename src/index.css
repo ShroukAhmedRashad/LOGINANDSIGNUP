@@ -1,0 +1,19 @@
+/*
+- File Name: index.css
+- Author: shrouk ahmed
+- Date of Creation: 17/9/2024
+- Versions Information: 1.0.0
+- Dependencies:none
+- Contributors:
+- Last Modified Date: 
+- Description : a global styling file
+*/
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+  font-family: "Roboto", sans-serif;
+}
