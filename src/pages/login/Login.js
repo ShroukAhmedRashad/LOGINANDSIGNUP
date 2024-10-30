@@ -51,10 +51,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useForm } from "react-hook-form";
+import { CleaningServices } from "@mui/icons-material";
 
 const Login = () => {
   const [isActive, setIsActive] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [rememberMe, setRememberMe] = useState(false);
 
   // Username Validation
@@ -74,7 +77,6 @@ const Login = () => {
 
   const handleUsernameFocus = () => {
     setUsernameTooltipOpen(true);
-
   };
 
   const handleUsernameBlur = () => {
@@ -166,7 +168,6 @@ const Login = () => {
       // Proceed with form submission (e.g., API call)
     }
 
-
     const emailPattern = /^[a-zA-Z0-9]{3,}(\.[a-zA-Z0-9]+)*@gmail\.com$/;
     const isValid = emailPattern.test(email);
     setEmailError(!isValid);
@@ -217,7 +218,34 @@ const Login = () => {
       navigate("/"); // Redirect to home page after successful signup
     } catch (error) {
       console.log("Error during API call: ", error);
+
+      let errorMsg;
+      if (error.response && error.response.data) {
+        if (error.response.status === 409) {
+          const serverMessage = error.response.data.message || "";
+          console.log("Server Message: ", serverMessage); // عرض رسالة الخادم للتحقق منها
+
+          // تحقق من نص الرسالة باستخدام جمل شرطية مباشرة
+          if (
+            serverMessage === "User.DublicatedEmail" ||
+            "Another user with the same email is already exists"
+          ) {
+            errorMsg = "Username or Email is already exists";
+          } else {
+            errorMsg = serverMessage || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+          }
+        } else {
+          errorMsg =
+            error.response.data.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+        }
+      } else {
+        errorMsg = error.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+      }
+
+      setErrorMessage(errorMsg);
+      setOpenSnackbar(true);
     }
+
     const getToken = () => {
       return localStorage.getItem("authToken"); // Match the storage key used in SignUp
     };
@@ -270,15 +298,20 @@ const Login = () => {
       }
     };
   };
-
+  // Function to handle closing the Snackbar
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setErrorMessage(""); // Clear the error message after closing
+  };
   // login api with token and refresh token
   const { register, handleSubmit } = useForm(); // Assuming you're using react-hook-form
 
   const onSubmit2 = async (data) => {
     const LoginData = {
-      EmailOrUsername: data.email,
+      EmailOrUsername: data.signInEmail,
       password: data.password,
     };
+
 
     console.log("LoginData being sent:", LoginData);
 
@@ -289,24 +322,52 @@ const Login = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
+      const role = response.data.role;
+      // Navigate based on role
+      if (role === "admin") {
+        navigate("/dashboard"); // Navigate to admin dashboard
+      } else if (role === "Student") {
+        navigate("/"); // Navigate to user dashboard
+      } else {
+        navigate("/"); // Default navigation if role does not match
+      }
+
       // Store tokens in localStorage
       localStorage.setItem("accessToken", response.data.accessToken);
       localStorage.setItem("refreshToken", response.data.refreshToken);
 
       console.log("Login successful:", response.data);
     } catch (error) {
-      if (error.response) {
-        // Server responded with a status other than 2xx
-        console.error("Error response:", error.response.data);
-      } else if (error.request) {
-        // Request was made but no response was received
-        console.error("No response received:", error.request);
+      console.log("Error during API call: ", error);
+
+      let errorMsg;
+      if (error.response && error.response.data) {
+        if (error.response.status === 401) {
+          const serverMessage = error.response.data.message || "";
+          console.log("Server Message: ", serverMessage); // عرض رسالة الخادم للتحقق منها
+
+          // تحقق من نص الرسالة باستخدام جمل شرطية مباشرة
+          if (
+            serverMessage === "'User.InvalidCredentials" ||
+            "Invalid email/password"
+          ) {
+            errorMsg = "Invalid Username or password ";
+          } else {
+            errorMsg = serverMessage || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+          }
+        } else {
+          errorMsg =
+            error.response.data.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+        }
       } else {
-        // Something else happened
-        console.error("Error:", error.message);
+        errorMsg = error.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
       }
+
+      setErrorMessage(errorMsg);
+      setOpenSnackbar(true);
     }
   };
+
   const getToken = () => {
     return localStorage.getItem("accessToken");
   };
@@ -506,7 +567,21 @@ const Login = () => {
               value={signInPassword}
               onChange={(e) => setSignInPassword(e.target.value)}
               required
+              autoComplete="off"
               sx={{
+                "& input:-webkit-autofill": {
+                  WebkitBoxShadow: "0 0 0 10px transparent inset", // Make the autofill background transparent
+                  backgroundColor: "transparent",
+                  WebkitTextFillColor: "#293241", // Maintain your desired text color
+                  transition: "background-color 5000s ease-in-out 0s", // A trick to override autofill background
+                },
+                "& input:-webkit-autofill:focus, & input:-webkit-autofill:hover":
+                  {
+                    backgroundColor: "transparent",
+                    WebkitBoxShadow: "0 0 0 10px transparent inset", // Keep it transparent on focus/hover
+                    transition: "background-color 5000s ease-in-out 0s", // Maintain the background color override
+                  },
+
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "25px",
                   width: "320px",
@@ -1089,6 +1164,19 @@ const Login = () => {
             {/* end of sign up form  */}
           </div>
         )}
+        <Snackbar
+          open={openSnackbar}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="error"
+            sx={{ width: "100%" }}
+          >
+            {errorMessage}
+          </Alert>
+        </Snackbar>
         <Snackbar
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
           open={open}

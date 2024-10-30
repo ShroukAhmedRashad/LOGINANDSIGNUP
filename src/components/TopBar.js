@@ -14,7 +14,7 @@
 - Last Modified Date: 17/10/2024
 - Description : project header
 */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   alpha,
   Box,
@@ -28,6 +28,7 @@ import {
   Menu,
   MenuItem,
   useMediaQuery,
+  Avatar,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import MuiAppBar from "@mui/material/AppBar";
@@ -67,6 +68,7 @@ const TopBar = ({ open, handleDrawerOpen, setMode }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // Check if the screen is mobile
   const isIpad = useMediaQuery(theme.breakpoints.between("sm", "md")); // Check if the screen is iPad
   const isLandscape = useMediaQuery(theme.breakpoints.between("sm", "md")); // Check if the screen is iPad
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // New state for login status
 
   const handleSignInClick = () => {
     navigate("/login");
@@ -76,6 +78,18 @@ const TopBar = ({ open, handleDrawerOpen, setMode }) => {
     navigate("/signup");
   };
   
+  useEffect(() => {
+    // Check if user is logged in (you can modify this logic based on your auth implementation)
+    const user = localStorage.getItem("user"); // Example: get user info from local storage
+    if (user) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+  const handleLogout = () => {
+    // Implement logout logic here (e.g., remove user data from local storage)
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+  };
 
   const toggleTheme = () => {
     const newMode = theme.palette.mode === "light" ? "dark" : "light";
@@ -279,9 +293,14 @@ const TopBar = ({ open, handleDrawerOpen, setMode }) => {
             )}
           </IconButton>
         </Box>
-        <Stack direction="row" spacing={0}>
-          {" "}
-          {/* Adjusted spacing between buttons */}
+          
+
+        {isLoggedIn ? (
+          <IconButton onClick={handleLogout} color="inherit">
+          <Avatar alt="User Avatar" src="/path/to/user/avatar.jpg" /> {/* Replace with actual avatar path */}
+        </IconButton>
+      ) : (
+        <Stack direction="row" spacing={0}> 
           <Button
             type="submit"
             variant="contained"
@@ -315,6 +334,9 @@ const TopBar = ({ open, handleDrawerOpen, setMode }) => {
             Sign up
           </Button>
         </Stack>
+        )}
+
+
       </Toolbar>
     </AppBar>
   );

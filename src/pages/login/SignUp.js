@@ -53,7 +53,8 @@ import { useForm } from "react-hook-form";
 
 const SignUp = () => {
   const [isActive, setIsActive] = useState(false);
-
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   // Username Validation
@@ -244,6 +245,32 @@ const SignUp = () => {
       navigate("/");
     } catch (error) {
       console.log("Error during API call: ", error);
+
+      let errorMsg;
+      if (error.response && error.response.data) {
+        if (error.response.status === 409) {
+          const serverMessage = error.response.data.message || "";
+          console.log("Server Message: ", serverMessage); // عرض رسالة الخادم للتحقق منها
+
+          // تحقق من نص الرسالة باستخدام جمل شرطية مباشرة
+          if (
+            serverMessage === "User.DublicatedEmail" ||
+            "Another user with the same email is already exists"
+          ) {
+            errorMsg = "Username or Email is already exists";
+          } else {
+            errorMsg = serverMessage || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+          }
+        } else {
+          errorMsg =
+            error.response.data.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+        }
+      } else {
+        errorMsg = error.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+      }
+
+      setErrorMessage(errorMsg);
+      setOpenSnackbar(true);
     }
     /////////////////////////////////////////////////////////////
 
@@ -270,7 +297,7 @@ const SignUp = () => {
         console.error("Error fetching data:", error);
 
         // Optionally handle token expiration and refresh
-        if (error.response && error.response.status === 401) {
+        if (error.response && error.response.status === 401 || 400) {
           console.log("Token expired, refreshing...");
           await refreshAccessToken(); // Implement refresh logic
         }
@@ -299,7 +326,10 @@ const SignUp = () => {
       }
     };
   };
-
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setErrorMessage(""); // Clear the error message after closing
+  };
   /////////////////////////////////////////////////////////////
 
   //login api
@@ -307,7 +337,7 @@ const SignUp = () => {
 
   const onSubmit2 = async (data) => {
     const LoginData = {
-      EmailOrUsername: data.email,
+      EmailOrUsername: data.signInEmail,
       password: data.password,
     };
 
@@ -319,23 +349,49 @@ const SignUp = () => {
         LoginData,
         { headers: { "Content-Type": "application/json" } }
       );
-
+      const role = response.data.role;
+      // Navigate based on role
+      if (role === "admin") {
+        navigate("/dashboard"); // Navigate to admin dashboard
+      } else if (role === "Student") {
+        navigate("/"); // Navigate to user dashboard
+      } else {
+        navigate("/"); // Default navigation if role does not match
+      }
+      
       // Store tokens in localStorage
       localStorage.setItem("accessToken", response.data.accessToken);
       localStorage.setItem("refreshToken", response.data.refreshToken);
 
       console.log("Login successful:", response.data);
     } catch (error) {
-      if (error.response) {
-        // Server responded with a status other than 2xx
-        console.error("Error response:", error.response.data);
-      } else if (error.request) {
-        // Request was made but no response was received
-        console.error("No response received:", error.request);
+      console.log("Error during API call: ", error);
+
+      let errorMsg;
+      if (error.response && error.response.data) {
+        if (error.response.status === 401 || 400) {
+          const serverMessage = error.response.data.message || "";
+          console.log("Server Message: ", serverMessage); // عرض رسالة الخادم للتحقق منها
+
+          // تحقق من نص الرسالة باستخدام جمل شرطية مباشرة
+          if (
+            serverMessage === "The EmailOrUsername field is required" ||
+            "Email Or Username' must not be empty"
+          ) {
+            errorMsg = "Invalid Username or password ";
+          } else {
+            errorMsg = serverMessage || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+          }
+        } else {
+          errorMsg =
+            error.response.data.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
+        }
       } else {
-        // Something else happened
-        console.error("Error:", error.message);
+        errorMsg = error.message || "حدث خطأ غير متوقع. حاول مرة أخرى.";
       }
+
+      setErrorMessage(errorMsg);
+      setOpenSnackbar(true);
     }
   };
 
@@ -361,7 +417,7 @@ const SignUp = () => {
       console.error("Error fetching data:", error);
 
       //  handle token expiration and refresh
-      if (error.response && error.response.status === 401) {
+      if (error.response && error.response.status === 401 || 400) {
         console.log("Token expired, refreshing...");
         await refreshAccessToken(); // Implement refresh logic
       }
@@ -1155,6 +1211,19 @@ const SignUp = () => {
             </div>
           </div>
         </div>
+        <Snackbar
+          open={openSnackbar}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="error"
+            sx={{ width: "100%" }}
+          >
+            {errorMessage}
+          </Alert>
+        </Snackbar>
         <Snackbar
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
           open={open}
